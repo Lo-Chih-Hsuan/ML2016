@@ -12,7 +12,7 @@ def data_extract(train_list, start_point):
 
 
 def gradient_linear(x_list, w_list, yn_list, b, lamda): #regularization, x_list, y_list-> hole batch list
-	#power_arr = np.append(np.ones(26), np.array([7]), axis= 0)
+	power_arr = np.append(np.ones(62), np.array([2]), axis= 0)
 	#np.power(x_list, power_arr)		
 	_sum= np.dot(x_list.T, (yn_list- (np.dot(x_list, w_list)+ b))*(-1)) / len(x_list)
 	_sum_b= np.sum((yn_list- (np.dot(x_list, w_list)+ b))* (-1)) / len(x_list)
@@ -46,10 +46,10 @@ def loss_function(x_list, yn_list, w_list, b, lamda):
 		
 if __name__ == '__main__':
 
-	lr= 0.000001
-	iteration= 100000
-	lamda= 1
-	batch_size= 560 
+	lr= 0.000005
+	iteration= 50000
+	lamda= 0
+	batch_size= 565 
 	w_list=np.zeros(63)
 	b= 0
 	#y= b+ x0w0+ x1w1+ ....+ x8w8
@@ -57,7 +57,8 @@ if __name__ == '__main__':
 	
 	train = pd.read_csv('data/train.csv')
 	test = pd.read_csv('data/test_X.csv', header= None)
-
+	
+	####training data#####
 	CO_train = np.array(data_extract(train, 2))
 	NO2_train = np.array(data_extract(train, 5))
 	NOX_train = np.array(data_extract(train, 6))
@@ -86,38 +87,8 @@ if __name__ == '__main__':
 	yn_list= np.array(yn_list, dtype= float)
 	#np.int64(x_list)
 	#np.int64(yn_list)
-
-	grad_mag= np.array([], dtype= float)
-	grad_mag_b= 0
-	for ii in range(iteration):
-		for batch in iteration_batch(x_list, yn_list, batch_size):
-			x, yn= batch
-			#print x, yn
-			gradient, gradient_b =  gradient_linear(x, w_list, yn, b, lamda)
-			if ii > 30000:
-				gradient= gradient/ 10
-				gradient_b= gradient/ 10
-			if ii > 50000:
-				gradient= gradient/ 10
-				gradient_b= gradient/ 10
-			if ii > 100000:
-				gradient= gradient/ 10
-				gradient_b= gradient/ 10
-
-			w_list = w_list- lr*gradient
-			b = b-lr*gradient_b
-			if ii == 0:
-				grad_mag= np.absolute(lr*gradient)
-				grad_mag_b= np.absolute(lr*gradient_b)
-		
-		##print loss##
-		loss= loss_function(x_list, yn_list, w_list, b, lamda)
-		if ii% 1000 == 0:
-			print('[{}]loss: {}'.format(ii, (loss)**0.5))
 	
-	print w_list, b 
-
-	####testing#####
+	####testing data#####
 	test= test.T
 	CO_test= []
 	NO2_test= []
@@ -143,14 +114,62 @@ if __name__ == '__main__':
 
 	test_list= np.concatenate((CO_test,NO2_test,NOX_test,O3_test,PM10_test, PM25_test, SO2_test), axis= 1)
 	test_list= np.array(test_list, dtype= float)
-	prediction= np.dot(test_list, w_list)+ b
 
 	#### test myself#####
 	my_test= np.array(pd.read_csv('answer.csv', header= None)).flatten()
-	my_loss= loss_function(prediction, my_test, 1, 0, 0)
-	print len(prediction)
-	print ('test error: {}'.format((my_loss)**0.5))
 
+	best_w= [] 
+	best_b= []
+	best_loss= 100
+	for ii in range(iteration):
+		for batch in iteration_batch(x_list, yn_list, batch_size):
+			x, yn= batch
+			#print x, yn
+			gradient, gradient_b =  gradient_linear(x, w_list, yn, b, lamda)
+			if ii > 10000:
+				gradient= gradient*0.1
+				gradient_b= gradient_b*0.1
+			if ii > 30000:
+				gradient= gradient*0.1
+				gradient_b= gradient_b*0.1
+			if ii > 50000:
+				gradient= gradient*0.01
+				gradient_b= gradient_b*0.01
+			if ii > 100000:
+				gradient= gradient*0.01
+				gradient_b= gradient_b*0.01
+			if ii > 200000:
+				gradient= gradient*0.01
+				gradient_b= gradient_b*0.01
+	
+	
+			w_list = w_list- lr*gradient
+			b = b-lr*gradient_b
+			if ii == 0:
+				grad_mag= np.absolute(lr*gradient)
+				grad_mag_b= np.absolute(lr*gradient_b)
+		
+		##print loss##
+		#loss= loss_function(x_list, yn_list, w_list, b, lamda)
+		#print('[{}]loss: {}'.format(ii, (loss)**0.5))
+		if ii% 1000 == 0:
+			prediction= np.dot(test_list, w_list)+ b
+			my_loss= loss_function(prediction, my_test, 1, 0, 0)
+			if my_loss < best_loss:
+				best_loss= my_loss
+				best_w= w_list
+				best_b= b
+			
+			print ('[{}]test error: {}'.format(ii ,(my_loss)**0.5))
+		
+	print w_list, b 
+
+	
+	
+
+	prediction= np.dot(test_list, best_w)+ best_b
+	last_loss= loss_function(prediction, my_test, 1, 0, 0)
+	print ('[{}]best error: {}'.format(ii ,(last_loss)**0.5))
 	#prediction= prediction.astype(int)
 	prediction= np.hstack(('value', prediction))
 	

@@ -152,6 +152,7 @@ if __name__ == '__main__':
 		##print loss##
 		#loss= loss_function(x_list, yn_list, w_list, b, lamda)
 		#print('[{}]loss: {}'.format(ii, (loss)**0.5))
+		"""
 		if ii% 1000 == 0:
 			prediction= np.dot(test_list, w_list)+ b
 			my_loss= loss_function(prediction, my_test, 1, 0, 0)
@@ -161,7 +162,7 @@ if __name__ == '__main__':
 				best_b= b
 			
 			print ('[{}]test error: {}'.format(ii ,(my_loss)**0.5))
-		
+		"""
 	print w_list, b 
 
 	
